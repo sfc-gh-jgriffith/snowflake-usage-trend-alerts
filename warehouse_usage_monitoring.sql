@@ -28,36 +28,6 @@ def run(session, alert_threshold_low:float, alert_threshold_high:float, warehous
                  ) a
         where 
             true 
-create or replace procedure warehouse_usage_monitoring(alert_threshold_low float, 
-                                                       alert_threshold_high float, 
-                                                       warehouse_names array, 
-                                                       email_addresses array)
-returns variant
-language PYTHON
-runtime_version='3.8'
-packages=('snowflake-snowpark-python', 'pandas')
-handler='run'
-EXECUTE AS CALLER -- cannot use OWNER when querying INFORMATION_SCHEMA
-as 
-$$
-def run(session, alert_threshold_low:float, alert_threshold_high:float, warehouse_names:list, email_addresses:list):
-    import pandas as pd 
-    
-    summ = session.sql(
-    """with warehouse_by_day as (
-        select 
-            warehouse_name,
-            date(end_time) as date,
-            sum(credits_used) as credits_used,
-            sum(credits_used_compute) as credits_used_compute,
-            sum(credits_used_cloud_services) as credits_used_cloud_services
-        from
-            table(information_schema.WAREHOUSE_METERING_HISTORY(
-                                    DATE_RANGE_START => current_date() - interval '5 days'
-                                )
-                 ) a
-        where 
-            true 
             and hour(end_time) < hour(current_time())
         group by 
             warehouse_name,
